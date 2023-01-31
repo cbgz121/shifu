@@ -44,6 +44,10 @@ var (
 	instructionSettings *deviceshifubase.DeviceShifuInstructionSettings
 )
 
+const (
+	DeviceNameHeaderField = "Device-Name"
+)
+
 // New This function creates a new Device Shifu based on the configuration
 func New(deviceShifuMetadata *deviceshifubase.DeviceShifuMetaData) (*DeviceShifuHTTP, error) {
 	if deviceShifuMetadata.Namespace == "" {
@@ -426,6 +430,7 @@ func (ds *DeviceShifuHTTP) collectHTTPTelemtries() (bool, error) {
 		switch protocol := *ds.base.EdgeDevice.Spec.Protocol; protocol {
 		case v1alpha1.ProtocolHTTP, v1alpha1.ProtocolHTTPCommandline:
 			telemetries := ds.base.DeviceShifuConfig.Telemetries.DeviceShifuTelemetries
+			deviceName := ds.base.EdgeDevice.Name
 			for telemetry, telemetryProperties := range telemetries {
 				if ds.base.EdgeDevice.Spec.Address == nil {
 					return false, fmt.Errorf("Device %v does not have an address", ds.base.Name)
@@ -481,6 +486,7 @@ func (ds *DeviceShifuHTTP) collectHTTPTelemtries() (bool, error) {
 
 						telemetryCollectionService, exist := deviceshifubase.TelemetryCollectionServiceMap[telemetry]
 						if exist && *telemetryCollectionService.TelemetrySeriveEndpoint != "" {
+							resp.Header.Add(DeviceNameHeaderField, deviceName)
 							err = deviceshifubase.PushTelemetryCollectionService(&telemetryCollectionService, resp)
 							if err != nil {
 								return false, err
